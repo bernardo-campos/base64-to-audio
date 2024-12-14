@@ -72,13 +72,9 @@
 
           const base64Lines = this.base64Input.split('\n').map(line => line.trim()).filter(line => line);
 
-          if (base64Lines.length === 0) {
-            alert(this.t("textareaPlaceholder"));
-            return;
-          }
-
           const audioChunks = [];
           this.individualAudioSrc = [];
+          let invalidCount = 0;
 
           base64Lines.forEach(base64String => {
             try {
@@ -99,6 +95,7 @@
               }
             } catch (error) {
               console.error("Error decoding Base64:", error);
+              invalidCount++;
             }
           });
 
@@ -106,8 +103,12 @@
             // Merge all audio chunks into a single Blob
             const mergedBlob = new Blob(audioChunks, { type: "audio/mpeg" });
             this.audioSrc = URL.createObjectURL(mergedBlob);
-          } else if (this.combineAudio) {
+          } else if (this.combineAudio && invalidCount === base64Lines.length) {
             alert(this.t("textareaPlaceholder"));
+          }
+
+          if (invalidCount > 0) {
+            alert(`${invalidCount} ${this.t('invalidLines')}`);
           }
         },
         setLanguage() {
