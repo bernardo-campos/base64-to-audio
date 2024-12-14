@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Base64 Audio Decoder</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen bg-gray-100 text-gray-800">
+  <div id="app" class="w-full max-w-xl p-4">
+    <h1 class="text-3xl font-bold mb-4">Base64 Audio Decoder</h1>
+    <p class="mb-4">Paste the Base64-encoded audio below, one per line, and decode them into a single audio file.</p>
+
+    <textarea v-model="base64Input" placeholder="Paste Base64 audio codes here, one per line" class="w-full h-36 p-2 border border-gray-300 rounded mb-4"></textarea>
+    <button @click="decodeAndMerge" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Decode and Merge</button>
+
+    <audio v-if="audioSrc" :src="audioSrc" controls class="mt-4"></audio>
+  </div>
+
+  <script>
+    const app = Vue.createApp({
+      data() {
+        return {
+          base64Input: '',
+          audioSrc: null
+        };
+      },
+      methods: {
+        decodeAndMerge() {
+          if (!this.base64Input.trim()) {
+            alert("Please enter some Base64-encoded audio.");
+            return;
+          }
+
+          const base64Lines = this.base64Input.split('\n').map(line => line.trim()).filter(line => line);
+
+          if (base64Lines.length === 0) {
+            alert("No valid Base64 audio data found.");
+            return;
+          }
+
+          const audioChunks = [];
+
+          base64Lines.forEach(base64String => {
+            try {
+              // Decode Base64 string to binary
+              const binaryString = atob(base64String);
+              const len = binaryString.length;
+              const bytes = new Uint8Array(len);
+
+              for (let i = 0; i < len; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+              }
+
+              audioChunks.push(bytes);
+            } catch (error) {
+              console.error("Error decoding Base64:", error);
+            }
+          });
+
+          if (audioChunks.length > 0) {
+            // Merge all audio chunks into a single Blob
+            const mergedBlob = new Blob(audioChunks, { type: "audio/mpeg" });
+
+            // Create a URL for the merged Blob and set it as the audio source
+            this.audioSrc = URL.createObjectURL(mergedBlob);
+          } else {
+            alert("No valid audio data could be decoded.");
+          }
+        }
+      }
+    });
+
+    app.mount('#app');
+  </script>
+</body>
+</html>
