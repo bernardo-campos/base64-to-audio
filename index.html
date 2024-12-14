@@ -20,24 +20,35 @@
     <p class="mb-4">{{ t('description') }}</p>
 
     <textarea v-model="base64Input" :placeholder="t('textareaPlaceholder')" class="w-full h-36 p-2 border border-gray-300 rounded mb-4"></textarea>
-    <button @click="decodeAndMerge" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">{{ t('decodeButton') }}</button>
+    <div class="flex items-center justify-around space-x-4">
+      <label class="flex items-center space-x-2">
+        <input type="checkbox" v-model="combineAudio" class="form-checkbox">
+        <span>{{ t('combineCheckbox') }}</span>
+      </label>
+      <button @click="decodeAndMerge" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">{{ t('decodeButton') }}</button>
+    </div>
 
-    <audio v-if="audioSrc" :src="audioSrc" controls class="mt-4"></audio>
+    <audio v-if="combineAudio && audioSrc" :src="audioSrc" controls class="mt-4"></audio>
+    <div v-else class="space-y-2 mt-4">
+      <audio v-for="(src, index) in individualAudioSrc" :key="index" :src="src" controls></audio>
+    </div>
   </div>
 
   <script>
     const translations = {
       en: {
         title: "Base64 Audio Decoder",
-        description: "Paste the Base64-encoded audio below, one per line, and decode them into a single audio file.",
+        description: "Paste the Base64-encoded audio below, one per line, and decode them into audio files.",
         textareaPlaceholder: "Paste Base64 audio codes here, one per line",
-        decodeButton: "Decode and Merge",
+        decodeButton: "Decode",
+        combineCheckbox: "Combine into one audio file",
       },
       es: {
         title: "Decodificador de Audio Base64",
-        description: "Pega el audio codificado en Base64 a continuación, una por línea, y decodifícalos en un único archivo de audio.",
+        description: "Pega el audio codificado en Base64 a continuación, una por línea, y decodifícalos en archivos de audio.",
         textareaPlaceholder: "Pega los códigos de audio Base64 aquí, uno por línea",
-        decodeButton: "Decodificar y Combinar",
+        decodeButton: "Decodificar",
+        combineCheckbox: "Combinar en un solo archivo de audio",
       }
     };
 
@@ -46,6 +57,8 @@
         return {
           base64Input: '',
           audioSrc: null,
+          individualAudioSrc: [],
+          combineAudio: true,
           selectedLanguage: 'en',
           texts: translations['en']
         };
@@ -65,6 +78,7 @@
           }
 
           const audioChunks = [];
+          this.individualAudioSrc = [];
 
           base64Lines.forEach(base64String => {
             try {
@@ -77,19 +91,22 @@
                 bytes[i] = binaryString.charCodeAt(i);
               }
 
-              audioChunks.push(bytes);
+              if (!this.combineAudio) {
+                const blob = new Blob([bytes], { type: "audio/mpeg" });
+                this.individualAudioSrc.push(URL.createObjectURL(blob));
+              } else {
+                audioChunks.push(bytes);
+              }
             } catch (error) {
               console.error("Error decoding Base64:", error);
             }
           });
 
-          if (audioChunks.length > 0) {
+          if (this.combineAudio && audioChunks.length > 0) {
             // Merge all audio chunks into a single Blob
             const mergedBlob = new Blob(audioChunks, { type: "audio/mpeg" });
-
-            // Create a URL for the merged Blob and set it as the audio source
             this.audioSrc = URL.createObjectURL(mergedBlob);
-          } else {
+          } else if (this.combineAudio) {
             alert(this.t("textareaPlaceholder"));
           }
         },
