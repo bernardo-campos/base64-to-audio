@@ -9,34 +9,58 @@
 </head>
 <body class="flex flex-col items-center justify-center min-h-screen bg-gray-100 text-gray-800">
   <div id="app" class="w-full max-w-xl p-4">
-    <h1 class="text-3xl font-bold mb-4">Base64 Audio Decoder</h1>
-    <p class="mb-4">Paste the Base64-encoded audio below, one per line, and decode them into a single audio file.</p>
+    <div class="flex justify-end mb-4">
+      <select v-model="selectedLanguage" @change="setLanguage" class="px-2 py-1 border border-gray-300 rounded">
+        <option value="en">English</option>
+        <option value="es">Español</option>
+      </select>
+    </div>
 
-    <textarea v-model="base64Input" placeholder="Paste Base64 audio codes here, one per line" class="w-full h-36 p-2 border border-gray-300 rounded mb-4"></textarea>
-    <button @click="decodeAndMerge" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Decode and Merge</button>
+    <h1 class="text-3xl font-bold mb-4">{{ t('title') }}</h1>
+    <p class="mb-4">{{ t('description') }}</p>
+
+    <textarea v-model="base64Input" :placeholder="t('textareaPlaceholder')" class="w-full h-36 p-2 border border-gray-300 rounded mb-4"></textarea>
+    <button @click="decodeAndMerge" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">{{ t('decodeButton') }}</button>
 
     <audio v-if="audioSrc" :src="audioSrc" controls class="mt-4"></audio>
   </div>
 
   <script>
+    const translations = {
+      en: {
+        title: "Base64 Audio Decoder",
+        description: "Paste the Base64-encoded audio below, one per line, and decode them into a single audio file.",
+        textareaPlaceholder: "Paste Base64 audio codes here, one per line",
+        decodeButton: "Decode and Merge",
+      },
+      es: {
+        title: "Decodificador de Audio Base64",
+        description: "Pega el audio codificado en Base64 a continuación, una por línea, y decodifícalos en un único archivo de audio.",
+        textareaPlaceholder: "Pega los códigos de audio Base64 aquí, uno por línea",
+        decodeButton: "Decodificar y Combinar",
+      }
+    };
+
     const app = Vue.createApp({
       data() {
         return {
           base64Input: '',
-          audioSrc: null
+          audioSrc: null,
+          selectedLanguage: 'en',
+          texts: translations['en']
         };
       },
       methods: {
         decodeAndMerge() {
           if (!this.base64Input.trim()) {
-            alert("Please enter some Base64-encoded audio.");
+            alert(this.t("textareaPlaceholder"));
             return;
           }
 
           const base64Lines = this.base64Input.split('\n').map(line => line.trim()).filter(line => line);
 
           if (base64Lines.length === 0) {
-            alert("No valid Base64 audio data found.");
+            alert(this.t("textareaPlaceholder"));
             return;
           }
 
@@ -66,8 +90,14 @@
             // Create a URL for the merged Blob and set it as the audio source
             this.audioSrc = URL.createObjectURL(mergedBlob);
           } else {
-            alert("No valid audio data could be decoded.");
+            alert(this.t("textareaPlaceholder"));
           }
+        },
+        setLanguage() {
+          this.texts = translations[this.selectedLanguage];
+        },
+        t(key) {
+          return this.texts[key] || key;
         }
       }
     });
